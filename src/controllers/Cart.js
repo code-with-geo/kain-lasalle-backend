@@ -31,13 +31,14 @@ export const addToCart = async (req, res) => {
 		});
 		if (cart) {
 			let newUnit = parseInt(cart.units) + parseInt(units);
+			let subTotal = parseInt(cart.price) * parseInt(newUnit);
 			await CartModel.updateOne(
 				{
 					storeID,
 					userID,
 					productID,
 				},
-				{ $set: { units: newUnit } }
+				{ $set: { units: newUnit, subtotal: subTotal } }
 			);
 
 			return res.json({
@@ -57,6 +58,50 @@ export const addToCart = async (req, res) => {
 		return res.json({
 			responsecode: "200",
 			message: "Product successfully added to cart.",
+		});
+	} catch (err) {
+		console.log(err);
+		return res.status(500).send({
+			responsecode: "500",
+			message: "Please contact technical support.",
+		});
+	}
+};
+
+export const removeFromCart = async (req, res) => {
+	try {
+		const { userID, productID } = req.body;
+
+		let cart = await CartModel.findOne({ userID, productID });
+
+		if (cart) {
+			if (cart.units <= 1) {
+				cart = await CartModel.deleteOne({ userID, productID });
+				return res.send({
+					responsecode: "200",
+					message: "Product successfully removed from cart",
+				});
+			} else {
+				let newUnit = parseInt(cart.units) - 1;
+				let subTotal = parseInt(cart.price) * parseInt(newUnit);
+				await CartModel.updateOne(
+					{
+						userID,
+						productID,
+					},
+					{ $set: { units: newUnit, subtotal: subTotal } }
+				);
+
+				return res.send({
+					responsecode: "200",
+					message: "Product successfully updated from cart",
+				});
+			}
+		}
+
+		return res.send({
+			responsecode: "402",
+			message: "Product not found",
 		});
 	} catch (err) {
 		console.log(err);
@@ -112,85 +157,23 @@ export const getCartProduct = async (req, res) => {
 	}
 };
 
-export const getTotal = async (req, res) => {
+export const getCartCount = async (req, res) => {
 	try {
 		const { userID } = req.body;
 
 		let cart = await CartModel.find({ userID });
-		if (cart) {
-			const { userID } = req.body;
-			cart = await CartModel.aggregate([
-				{
-					$project: {
-						userID: userID,
-						total: {
-							$multiply: ["$price", "$units"],
-						},
-					},
-				},
-			]);
-
-			return res.json({
-				responsecode: "200",
-				total: cart,
-			});
-		} else {
+		if (!cart) {
 			return res.send({
 				responsecode: "402",
 				message: "Cart is empty",
 			});
 		}
-	} catch (err) {
-		console.log(err);
-		return res.status(500).send({
-			responsecode: "500",
-			message: "Please contact technical support.",
-		});
-	}
-};
 
-export const getAllProduct = async (req, res) => {
-	try {
-		const { userID } = req.body;
-
-		let cart = await CartModel.find({ userID });
-
-		cart.map((val) => {
-			val.products.map(async (productID) => {
-				let products = await ProductModel.find({
-					_id: { $in: productID.productID },
-				});
-
-				console.log(products);
-			});
-		});
-
-		//let products = await ProductModel.find({ _id: cart.products.productID });
-		/*	const products = [];
-		cart.map((value) => {
-			products.push({
-				productID: value.productID,
-				units: value.units,
-			});
-		});
-
-		cart = await CartModel.findOne({
-			userID: userID,
-		});
-
-		cart = await CartModel.updateOne(
-			{
-				userID: userID,
-			},
-			{
-				$set: {
-					products: products,
-				},
-			}
-		);*/
+		cart = await CartModel.countDocuments({ userID });
 
 		return res.json({
 			responsecode: "200",
+			cart: cart,
 		});
 	} catch (err) {
 		console.log(err);

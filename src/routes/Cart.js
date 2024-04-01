@@ -1,16 +1,16 @@
 import express from "express";
 import {
 	addToCart,
-	getAllProduct,
+	getCartCount,
 	getCartProduct,
-	getTotal,
+	removeFromCart,
 } from "../controllers/Cart.js";
 
 const router = express.Router();
 
 router.post("/add/:storeID", addToCart);
 router.post("/", getCartProduct);
-router.post("/total", getTotal);
-router.post("/sample", getAllProduct);
+router.post("/count", getCartCount);
+router.post("/remove", removeFromCart);
 
 export { router as CartRouter };

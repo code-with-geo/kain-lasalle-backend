@@ -18,17 +18,12 @@ const CartSchema = mongoose.Schema({
 	},
 	price: { type: Number, required: true },
 	units: { type: Number, default: 1 },
-	products: [
-		{
-			productID: {
-				type: Schema.Types.ObjectId,
-				ref: "products",
-			},
-			units: {
-				type: Number,
-			},
+	subtotal: {
+		type: Number,
+		default: function () {
+			return this.price * this.units;
 		},
-	],
+	},
 });
 
 CartSchema.virtual("id").get(function () {

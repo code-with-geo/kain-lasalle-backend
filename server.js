@@ -9,6 +9,7 @@ import { UsersRouter } from "./src/routes/Users.js";
 import { VendorsRouter } from "./src/routes/Vendors.js";
 import { StoreRouter } from "./src/routes/Stores.js";
 import { CartRouter } from "./src/routes/Cart.js";
+import { OrdersRoute } from "./src/routes/Orders.js";
 app.use(
 	cors({
 		origin: process.env.CLIENT_URL,
@@ -23,6 +24,7 @@ app.use("/products", ProductRouter);
 app.use("/vendors", VendorsRouter);
 app.use("/stores", StoreRouter);
 app.use("/cart", CartRouter);
+app.use("/orders", OrdersRoute);
 
 mongoose.connect(process.env.CONNECTION_STRING);
 
