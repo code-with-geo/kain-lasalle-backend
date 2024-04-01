@@ -77,4 +77,56 @@ export const createOrder = async (req, res) => {
 	}
 };
 
+export const getAllOrders = async (req, res) => {
+	try {
+		const { userID } = req.body;
+
+		if (!userID.match(/^[0-9a-fA-F]{24}$/)) {
+			return res.send({
+				responsecode: "402",
+				message: "User not found.",
+			});
+		}
+
+		let orders = await OrdersModel.find({ userID });
+
+		if (!orders) {
+			return res.send({
+				responsecode: "402",
+				message: "No orders found for this user",
+			});
+		}
+
+		orders = await OrdersModel.aggregate([
+			{
+				$lookup: {
+					from: "users",
+					localField: "userID",
+					foreignField: "_id",
+					as: "user",
+				},
+			},
+			{
+				$lookup: {
+					from: "stores",
+					localField: "storeID",
+					foreignField: "_id",
+					as: "user",
+				},
+			},
+		]);
+
+		return res.json({
+			responsecode: "200",
+			orders: orders,
+		});
+	} catch (err) {
+		console.log(err);
+		return res.status(500).send({
+			responsecode: "500",
+			message: "Please contact technical support.",
+		});
+	}
+};
+
 export const verifyPayment = async (req, res) => {};

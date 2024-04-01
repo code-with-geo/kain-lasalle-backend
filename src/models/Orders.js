@@ -16,7 +16,11 @@ const OrderSchema = mongoose.Schema({
 		ref: "vendors",
 	},
 	total: { type: Number },
-	orderDateTime: { type: Date, default: Date.now },
+	orderDateTime: {
+		type: Date,
+		default: Date.now,
+		get: (orderDateTime) => orderDateTime.toLocaleDateString("en-US"), // getter
+	},
 	paymentID: { type: String, require: true },
 	paymentUrl: { type: String, require: true },
 	paymentReferenceNumber: { type: String, require: true },
