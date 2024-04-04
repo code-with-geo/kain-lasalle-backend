@@ -167,7 +167,6 @@ export const login = async (req, res) => {
 	try {
 		const { email, password } = req.body;
 		let vendor = await VendorModel.findOne({ email });
-
 		if (!vendor) {
 			return res.json({
 				message: "This vendor is not registered.",
