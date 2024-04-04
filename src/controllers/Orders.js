@@ -258,14 +258,16 @@ export const completeOrder = async (req, res) => {
 		let orders = await OrdersModel.findOne({ _id: orderID });
 		if (orders) {
 			if (orders.paymentStatus !== "pending") {
-				await OrdersModel.updateOne(
-					{ _id: orderID },
-					{ $set: { orderStatus: "complete" } }
-				);
-				return res.json({
-					responsecode: "200",
-					message: "Orders completed",
-				});
+				if (orders.orderStatus != "complete") {
+					await OrdersModel.updateOne(
+						{ _id: orderID },
+						{ $set: { orderStatus: "complete" } }
+					);
+					return res.json({
+						responsecode: "200",
+						message: "Orders completed",
+					});
+				}
 			} else {
 				let status = "";
 				const options = {
