@@ -268,6 +268,10 @@ export const completeOrder = async (req, res) => {
 						message: "Orders completed",
 					});
 				}
+				return res.json({
+					responsecode: "200",
+					message: "Order already complete",
+				});
 			} else {
 				let status = "";
 				const options = {
