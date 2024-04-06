@@ -58,14 +58,16 @@ export const verifyEmail = async (req, res) => {
 	try {
 		let vendorID = "";
 		let vendor = await VendorModel.findOne({ _id: req.params.id });
-		if (!vendor) return res.json({ message: "Invalid link." });
+		if (!vendor)
+			return res.json({ responsecode: "402", message: "Invalid link." });
 
 		let token = await VerificationTokenModel.findOne({
 			userID: vendor._id,
 			token: req.params.token,
 		});
 
-		if (!token) return res.json({ message: "Invalid link." });
+		if (!token)
+			return res.json({ responsecode: "402", message: "Invalid link." });
 		vendorID = vendor._id;
 		vendor = await VendorModel.updateOne(
 			{ _id: vendor._id },
@@ -74,7 +76,7 @@ export const verifyEmail = async (req, res) => {
 
 		await VerificationTokenModel.deleteMany({ userID: vendorID });
 
-		res.json({ message: "Email successfully verified." });
+		res.json({ responsecode: "200", message: "Email successfully verified." });
 	} catch (err) {
 		console.log(err);
 		return res
@@ -144,10 +146,12 @@ export const resetPassword = async (req, res) => {
 		if (!token)
 			return res.json({ responsecode: "402", message: "Invalid link." });
 
-		await VendorModel.updateOne({
-			_id: vendor._id,
-			password,
-		});
+		await VendorModel.updateOne(
+			{
+				_id: vendor._id,
+			},
+			{ $set: { password } }
+		);
 		await ResetPassTokenModel.deleteMany({ userID: vendor._id });
 
 		res.json({

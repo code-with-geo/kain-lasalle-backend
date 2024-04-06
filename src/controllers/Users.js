@@ -174,10 +174,12 @@ export const resetPassword = async (req, res) => {
 		if (!token)
 			return res.json({ responsecode: "402", message: "Invalid link." });
 
-		await UsersModel.updateOne({
-			_id: user._id,
-			password,
-		});
+		await UsersModel.updateOne(
+			{
+				_id: user._id,
+			},
+			{ $set: { password } }
+		);
 		await ResetPassTokenModel.deleteMany({ userID: user._id });
 
 		res.json({
