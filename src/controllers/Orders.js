@@ -292,7 +292,7 @@ export const completeOrder = async (req, res) => {
 						return status;
 					})
 					.catch((err) => console.error(err));
-
+				console.log(verify);
 				if (verify != "unpaid") {
 					await OrdersModel.updateOne(
 						{ _id: orderID },
@@ -306,6 +306,7 @@ export const completeOrder = async (req, res) => {
 				} else {
 					return res.json({
 						responsecode: "200",
+						message: "This order is unpaid.",
 						paymentURL: orders.paymentUrl,
 					});
 				}
