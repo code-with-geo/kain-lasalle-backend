@@ -281,6 +281,8 @@ export const completeOrder = async (req, res) => {
 						{ $set: { orderStatus: "complete" } }
 					);
 
+					let user = await UsersModel.findOne({ _id: orders.userID });
+
 					await EmailSender(
 						user.email,
 						"Orders Complete",
