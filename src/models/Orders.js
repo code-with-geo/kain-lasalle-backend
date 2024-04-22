@@ -18,8 +18,11 @@ const OrderSchema = mongoose.Schema({
 	total: { type: Number },
 	orderDateTime: {
 		type: Date,
-		default: Date.now,
-		get: (orderDateTime) => orderDateTime.toLocaleDateString("en-US"), // getter
+		default: () => new Date(Date.now() + 8 * 60 * 60 * 1000),
+	},
+	estimatedDateTime: {
+		type: Date,
+		default: () => new Date(Date.now() + 8 * 60 * 60 * 1000 + 30 * 60 * 1000),
 	},
 	paymentID: { type: String, require: true },
 	paymentUrl: { type: String, require: true },

@@ -4,6 +4,8 @@ import { OrdersModel } from "../models/Orders.js";
 import { ProductModel } from "../models/Products.js";
 import { Types } from "mongoose";
 import dotenv from "dotenv";
+import EmailSender from "../helper/EmailSender.js";
+import { UsersModel } from "../models/Users.js";
 dotenv.config();
 
 export const createOrder = async (req, res) => {
@@ -62,6 +64,21 @@ export const createOrder = async (req, res) => {
 						}).save();
 					});
 				}
+
+				let user = await UsersModel.findOne({ _id: userID });
+				const originalDateString = order.estimatedDateTime;
+				const originalDate = new Date(originalDateString);
+
+				const formattedDate = originalDate
+					.toISOString()
+					.replace(/T/, " ")
+					.replace(/\..+/, "");
+
+				await EmailSender(
+					user.email,
+					"Order Notification",
+					`Hi there, \n You're order ID ${order._id} will be ready at ${formattedDate}. Once your order is ready we'll send another notification. Please check your email. \n Thank you,`
+				);
 
 				cart = await CartModel.deleteMany({ userID });
 				return order.paymentUrl;
@@ -263,6 +280,12 @@ export const completeOrder = async (req, res) => {
 						{ _id: orderID },
 						{ $set: { orderStatus: "complete" } }
 					);
+
+					await EmailSender(
+						user.email,
+						"Orders Complete",
+						`Hi there, \n You're order ID ${orderID} is complete and ready to pick up.\n Thank you,`
+					);
 					return res.json({
 						responsecode: "200",
 						message: "Orders completed",
@@ -292,7 +315,7 @@ export const completeOrder = async (req, res) => {
 						return status;
 					})
 					.catch((err) => console.error(err));
-				console.log(verify);
+
 				if (verify != "unpaid") {
 					await OrdersModel.updateOne(
 						{ _id: orderID },
@@ -306,7 +329,6 @@ export const completeOrder = async (req, res) => {
 				} else {
 					return res.json({
 						responsecode: "200",
-						message: "This order is unpaid.",
 						paymentURL: orders.paymentUrl,
 					});
 				}
