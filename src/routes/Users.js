@@ -1,5 +1,6 @@
 import express from "express";
 import {
+	EditProfile,
 	forgotPassword,
 	getUserByID,
 	login,
@@ -17,5 +18,6 @@ router.post("/forgot", forgotPassword);
 router.post("/:id/reset/:token", resetPassword);
 router.post("/", getUserByID);
 router.get("/:userID", getUserByID);
+router.post("/edit", EditProfile);
 
 export { router as UsersRouter };
