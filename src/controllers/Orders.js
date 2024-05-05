@@ -281,13 +281,6 @@ export const completeOrder = async (req, res) => {
 						{ $set: { orderStatus: "complete" } }
 					);
 
-					let user = await UsersModel.findOne({ _id: orders.userID });
-
-					await EmailSender(
-						user.email,
-						"Orders Complete",
-						`Hi there, \n You're order ID ${orderID} is complete and ready to pick up.\n Thank you,`
-					);
 					return res.json({
 						responsecode: "200",
 						message: "Orders completed",
@@ -618,6 +611,78 @@ export const getCancelledOrdeCount = async (req, res) => {
 				message: "Please contact technical support.",
 			});
 		}
+	} catch (err) {
+		console.log(err);
+		return res.status(500).send({
+			responsecode: "500",
+			message: "Please contact technical support.",
+		});
+	}
+};
+
+export const NotifyCustomer = async (req, res) => {
+	try {
+		const { orderID } = req.body;
+
+		let orders = await OrdersModel.findOne({ _id: orderID });
+
+		if (!orders) {
+			return res.send({
+				responsecode: "402",
+				message: "No orders found",
+			});
+		}
+
+		let user = await UsersModel.findOne({ _id: orders.userID });
+
+		if (!user) {
+			return res.send({
+				responsecode: "402",
+				message: "No user found",
+			});
+		}
+
+		await EmailSender(
+			user.email,
+			"Orders Complete",
+			`Hi there, \n You're order ID ${orderID} is already prepared and ready to pick up.\n Thank you,`
+		);
+
+		return res.json({
+			responsecode: "200",
+			message: "Notificatin sent",
+		});
+	} catch (err) {
+		console.log(err);
+		return res.status(500).send({
+			responsecode: "500",
+			message: "Please contact technical support.",
+		});
+	}
+};
+
+export const tagOrderAsPaid = async (req, res) => {
+	try {
+		const { orderID } = req.body;
+
+		let orders = await OrdersModel.findOne({ _id: orderID });
+
+		if (!orders) {
+			return res.send({
+				responsecode: "402",
+				message: "No orders found",
+			});
+		}
+
+		await OrdersModel.updateOne(
+			{ _id: orderID },
+			{ $set: { paymentStatus: "paid" } }
+		);
+
+		return res.json({
+			responsecode: "200",
+			message: "Order Successfully Paid",
+		});
 	} catch (err) {
 		console.log(err);
 		return res.status(500).send({

@@ -12,6 +12,8 @@ import {
 	getOrdersCount,
 	getSoldOutProducts,
 	verifyPayment,
+	NotifyCustomer,
+	tagOrderAsPaid,
 } from "../controllers/Orders.js";
 
 const router = express.Router();
@@ -28,5 +30,7 @@ router.post("/count", getOrdersCount);
 router.post("/unpaid", getAllUnpaidOrder);
 router.post("/soldout", getSoldOutProducts);
 router.post("/cancelled", getCancelledOrdeCount);
+router.post("/notify", NotifyCustomer);
+router.post("/tag-as-paid", tagOrderAsPaid);
 
 export { router as OrdersRoute };

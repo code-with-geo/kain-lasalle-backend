@@ -27,6 +27,7 @@ const OrderSchema = mongoose.Schema({
 	paymentID: { type: String, require: true },
 	paymentUrl: { type: String, require: true },
 	paymentReferenceNumber: { type: String, require: true },
+	paymentType: { type: String },
 	paymentStatus: { type: String, default: "pending" },
 	orderStatus: { type: String, default: "pending" },
 });
