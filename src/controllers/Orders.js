@@ -650,7 +650,7 @@ export const NotifyCustomer = async (req, res) => {
 
 		return res.json({
 			responsecode: "200",
-			message: "Notificatin sent",
+			message: "Notification sent",
 		});
 	} catch (err) {
 		console.log(err);
