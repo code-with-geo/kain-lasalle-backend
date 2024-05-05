@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 
 const OrderSchema = mongoose.Schema({
+	orderNumber: { type: Number, require: true },
 	userID: {
 		type: Schema.Types.ObjectId,
 		require: true,
