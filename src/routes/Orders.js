@@ -14,6 +14,9 @@ import {
 	verifyPayment,
 	NotifyCustomer,
 	tagOrderAsPaid,
+	orderCancellation,
+	getTodaysSale,
+	getYesterdaySale,
 } from "../controllers/Orders.js";
 
 const router = express.Router();
@@ -32,5 +35,8 @@ router.post("/soldout", getSoldOutProducts);
 router.post("/cancelled", getCancelledOrdeCount);
 router.post("/notify", NotifyCustomer);
 router.post("/tag-as-paid", tagOrderAsPaid);
+router.post("/cancellation", orderCancellation);
+router.post("/today-sale", getTodaysSale);
+router.post("/yesterday-sale", getYesterdaySale);
 
 export { router as OrdersRoute };

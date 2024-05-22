@@ -2,10 +2,11 @@ import { CartModel } from "../models/Cart.js";
 import { OrdersItemModel } from "../models/OrderItems.js";
 import { OrdersModel } from "../models/Orders.js";
 import { ProductModel } from "../models/Products.js";
-import { Types } from "mongoose";
+import { Types, ObjectId } from "mongoose";
 import dotenv from "dotenv";
 import EmailSender from "../helper/EmailSender.js";
 import { UsersModel } from "../models/Users.js";
+import moment from "moment";
 dotenv.config();
 
 export const createOrder = async (req, res) => {
@@ -160,7 +161,16 @@ export const getOrdersByStoreID = async (req, res) => {
 			});
 		}
 
-		let orders = await OrdersModel.find({ storeID });
+		let orders = await OrdersModel.aggregate([
+			{
+				$lookup: {
+					from: "users",
+					localField: "userID",
+					foreignField: "_id",
+					as: "user",
+				},
+			},
+		]).match({ storeID: new Types.ObjectId(storeID) });
 
 		if (!orders) {
 			return res.send({
@@ -274,11 +284,11 @@ export const completeOrder = async (req, res) => {
 
 		let orders = await OrdersModel.findOne({ _id: orderID });
 		if (orders) {
-			if (orders.paymentStatus !== "pending") {
-				if (orders.orderStatus != "complete") {
+			if (orders.paymentStatus !== "Pending") {
+				if (orders.orderStatus != "Complete") {
 					await OrdersModel.updateOne(
 						{ _id: orderID },
-						{ $set: { orderStatus: "complete" } }
+						{ $set: { orderStatus: "Complete" } }
 					);
 
 					return res.json({
@@ -314,7 +324,7 @@ export const completeOrder = async (req, res) => {
 				if (verify != "unpaid") {
 					await OrdersModel.updateOne(
 						{ _id: orderID },
-						{ $set: { paymentStatus: "paid" } }
+						{ $set: { paymentStatus: "Paid" } }
 					);
 
 					return res.json({
@@ -356,7 +366,7 @@ export const verifyPayment = async (req, res) => {
 
 		let orders = await OrdersModel.findOne({ _id: orderID });
 		if (orders) {
-			if (orders.paymentStatus !== "pending") {
+			if (orders.paymentStatus !== "Pending") {
 				return res.json({
 					responsecode: "200",
 					message: "Order already paid",
@@ -385,7 +395,7 @@ export const verifyPayment = async (req, res) => {
 				if (verify != "unpaid") {
 					await OrdersModel.updateOne(
 						{ _id: orderID },
-						{ $set: { paymentStatus: "paid" } }
+						{ $set: { paymentStatus: "Paid" } }
 					);
 
 					return res.json({
@@ -414,6 +424,99 @@ export const verifyPayment = async (req, res) => {
 	}
 };
 
+export const orderCancellation = async (req, res) => {
+	try {
+		const { orderID } = req.body;
+
+		if (!orderID.match(/^[0-9a-fA-F]{24}$/)) {
+			return res.send({
+				responsecode: "402",
+				message: "Order not found.",
+			});
+		}
+
+		let orders = await OrdersModel.findOne({ _id: orderID });
+
+		if (orders) {
+			if (orders.paymentStatus !== "Unpaid") {
+				return res.json({
+					responsecode: "402",
+					message: "Order is already paid cancellation is not allowed",
+				});
+			} else if (
+				orders.paymentType !== "Cash" &&
+				orders.paymentStatus === "Unpaid"
+			) {
+				let status = "";
+				const options = {
+					method: "GET",
+					headers: {
+						accept: "application/json",
+						authorization: `Basic ${process.env.PAYMONGO_AUTH}`,
+					},
+				};
+
+				let verify = await fetch(
+					`https://api.paymongo.com/v1/links/${orders.paymentID}`,
+					options
+				)
+					.then((response) => response.json())
+					.then((response) => {
+						status = response.data.attributes.status;
+						return status;
+					})
+					.catch((err) => console.error(err));
+
+				if (verify != "unpaid") {
+					await OrdersModel.updateOne(
+						{ _id: orderID },
+						{ $set: { paymentStatus: "Paid" } }
+					);
+
+					return res.send({
+						responsecode: "200",
+						message: "Order is paid.",
+					});
+				} else {
+					await OrdersModel.updateOne(
+						{ _id: orderID },
+						{ $set: { orderStatus: "Cancelled" } }
+					);
+
+					return res.send({
+						responsecode: "200",
+						message: "Order is cancelled.",
+					});
+				}
+			} else if (
+				orders.paymentType === "Cash" &&
+				orders.paymentStatus !== "Unpaid"
+			) {
+				return res.send({
+					responsecode: "402",
+					message: "Order is already paid cancellation is not allowed",
+				});
+			} else {
+				await OrdersModel.updateOne(
+					{ _id: orderID },
+					{ $set: { orderStatus: "Cancelled" } }
+				);
+
+				return res.send({
+					responsecode: "200",
+					message: "Order is cancelled.",
+				});
+			}
+		}
+	} catch (err) {
+		console.log(err);
+		return res.status(500).send({
+			responsecode: "500",
+			message: "Please contact technical support.",
+		});
+	}
+};
+
 export const getAllPendingOrder = async (req, res) => {
 	try {
 		try {
@@ -426,7 +529,19 @@ export const getAllPendingOrder = async (req, res) => {
 				});
 			}
 
-			let orders = await OrdersModel.find({ storeID, orderStatus: "pending" });
+			let orders = await OrdersModel.aggregate([
+				{
+					$lookup: {
+						from: "users",
+						localField: "userID",
+						foreignField: "_id",
+						as: "user",
+					},
+				},
+			]).match({
+				storeID: new Types.ObjectId(storeID),
+				orderStatus: "Pending",
+			});
 
 			if (!orders) {
 				return res.send({
@@ -466,7 +581,10 @@ export const getOrdersCount = async (req, res) => {
 			});
 		}
 
-		let orders = await OrdersModel.countDocuments({ storeID });
+		let orders = await OrdersModel.countDocuments({
+			storeID,
+			orderStatus: "Pending",
+		});
 
 		if (!orders) {
 			return res.send({
@@ -502,7 +620,8 @@ export const getAllUnpaidOrder = async (req, res) => {
 
 			let orders = await OrdersModel.countDocuments({
 				storeID,
-				paymentStatus: "pending",
+				paymentStatus: "Unpaid",
+				orderStatus: "Pending",
 			});
 
 			if (!orders) {
@@ -683,6 +802,135 @@ export const tagOrderAsPaid = async (req, res) => {
 			responsecode: "200",
 			message: "Order Successfully Paid",
 		});
+	} catch (err) {
+		console.log(err);
+		return res.status(500).send({
+			responsecode: "500",
+			message: "Please contact technical support.",
+		});
+	}
+};
+
+export const getTodaysSale = async (req, res) => {
+	try {
+		try {
+			const { storeID } = req.body;
+			const today = moment();
+
+			if (!storeID.match(/^[0-9a-fA-F]{24}$/)) {
+				return res.send({
+					responsecode: "402",
+					message: "Order not found.",
+				});
+			}
+
+			let orders = await OrdersModel.aggregate([
+				{
+					$match: {
+						storeID: new Types.ObjectId(storeID),
+						orderDateTime: today.format("MM/DD/YYYY"),
+					},
+				},
+				{
+					$group: {
+						_id: { order: "$orderStatus" },
+						totalSum: { $sum: `$total` },
+					},
+				},
+			]);
+
+			if (!orders) {
+				return res.send({
+					responsecode: "402",
+					message: "No orders found for this store",
+				});
+			}
+
+			let todaysSale = 0;
+			orders.forEach((order) => {
+				if (order._id.order == "Complete") {
+					todaysSale = order.totalSum;
+				} else {
+					todaysSale = 0;
+				}
+			});
+
+			return res.json({
+				responsecode: "200",
+				todaysSale: todaysSale,
+			});
+		} catch (err) {
+			console.log(err);
+			return res.status(500).send({
+				responsecode: "500",
+				message: "Please contact technical support.",
+			});
+		}
+	} catch (err) {
+		console.log(err);
+		return res.status(500).send({
+			responsecode: "500",
+			message: "Please contact technical support.",
+		});
+	}
+};
+
+export const getYesterdaySale = async (req, res) => {
+	try {
+		try {
+			const { storeID } = req.body;
+			const today = moment();
+			const yesterday = today.subtract(1, "days");
+
+			if (!storeID.match(/^[0-9a-fA-F]{24}$/)) {
+				return res.send({
+					responsecode: "402",
+					message: "Order not found.",
+				});
+			}
+
+			let orders = await OrdersModel.aggregate([
+				{
+					$match: {
+						storeID: new Types.ObjectId(storeID),
+						orderDateTime: yesterday.format("MM/DD/YYYY"),
+					},
+				},
+				{
+					$group: {
+						_id: { order: "$orderStatus" },
+						totalSum: { $sum: `$total` },
+					},
+				},
+			]);
+
+			if (!orders) {
+				return res.send({
+					responsecode: "402",
+					message: "No orders found for this store",
+				});
+			}
+
+			let yesterdaysSale = 0;
+			orders.forEach((order) => {
+				if (order._id.order == "Complete") {
+					yesterdaysSale = order.totalSum;
+				} else {
+					yesterdaysSale = 0;
+				}
+			});
+
+			return res.json({
+				responsecode: "200",
+				yesterdaysSale: yesterdaysSale,
+			});
+		} catch (err) {
+			console.log(err);
+			return res.status(500).send({
+				responsecode: "500",
+				message: "Please contact technical support.",
+			});
+		}
 	} catch (err) {
 		console.log(err);
 		return res.status(500).send({

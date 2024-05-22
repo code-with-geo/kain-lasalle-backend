@@ -1,5 +1,13 @@
 import mongoose, { Schema } from "mongoose";
 
+const formatDate = (date) => {
+	const pad = (n) => (n < 10 ? "0" + n : n);
+	const month = pad(date.getMonth() + 1); // Months are zero-based
+	const day = pad(date.getDate());
+	const year = date.getFullYear();
+	return `${month}/${day}/${year}`;
+};
+
 const OrderSchema = mongoose.Schema({
 	orderNumber: { type: Number, require: true },
 	userID: {
@@ -17,10 +25,7 @@ const OrderSchema = mongoose.Schema({
 		ref: "vendors",
 	},
 	total: { type: Number },
-	orderDateTime: {
-		type: Date,
-		default: () => new Date(Date.now() + 8 * 60 * 60 * 1000),
-	},
+	orderDateTime: { type: String, default: () => formatDate(new Date()) },
 	estimatedDateTime: {
 		type: Date,
 		default: () => new Date(Date.now() + 8 * 60 * 60 * 1000 + 30 * 60 * 1000),
@@ -29,8 +34,8 @@ const OrderSchema = mongoose.Schema({
 	paymentUrl: { type: String, require: true },
 	paymentReferenceNumber: { type: String, require: true },
 	paymentType: { type: String },
-	paymentStatus: { type: String, default: "pending" },
-	orderStatus: { type: String, default: "pending" },
+	paymentStatus: { type: String, default: "Unpaid" },
+	orderStatus: { type: String, default: "Pending" },
 });
 
 OrderSchema.virtual("id").get(function () {
