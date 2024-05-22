@@ -249,7 +249,16 @@ export const getOrdersByOrderID = async (req, res) => {
 			});
 		}
 
-		let orders = await OrdersModel.find({ _id: orderID });
+		let orders = await OrdersModel.aggregate([
+			{
+				$lookup: {
+					from: "users",
+					localField: "userID",
+					foreignField: "_id",
+					as: "user",
+				},
+			},
+		]).match({ _id: new Types.ObjectId(orderID) });
 
 		if (!orders) {
 			return res.send({
