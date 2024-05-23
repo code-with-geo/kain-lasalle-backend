@@ -9,7 +9,8 @@ import {
 
 export const addStore = async (req, res) => {
 	try {
-		const { name, description } = req.body;
+		const { name, address, description, contactperson, contactno, storehour } =
+			req.body;
 
 		let store = await StoreModel.findOne({ name });
 
@@ -32,7 +33,11 @@ export const addStore = async (req, res) => {
 
 		store = await new StoreModel({
 			name,
+			address,
 			description,
+			contactperson,
+			contactno,
+			storehour,
 			image: downloadURL,
 		}).save();
 
@@ -51,7 +56,15 @@ export const addStore = async (req, res) => {
 
 export const editStore = async (req, res) => {
 	try {
-		const { storeID, name, description } = req.body;
+		const {
+			storeID,
+			name,
+			address,
+			description,
+			contactperson,
+			contactno,
+			storehour,
+		} = req.body;
 
 		if (!storeID.match(/^[0-9a-fA-F]{24}$/)) {
 			return res.send({
@@ -101,12 +114,32 @@ export const editStore = async (req, res) => {
 
 			await StoreModel.updateOne(
 				{ _id: storeID },
-				{ $set: { name, description, image: downloadURL } }
+				{
+					$set: {
+						name,
+						address,
+						description,
+						contactperson,
+						contactno,
+						storehour,
+						image: downloadURL,
+					},
+				}
 			);
 		} else {
 			await StoreModel.updateOne(
 				{ _id: storeID },
-				{ $set: { name, description, image: fileName } }
+				{
+					$set: {
+						name,
+						address,
+						description,
+						contactperson,
+						contactno,
+						storehour,
+						image: fileName,
+					},
+				}
 			);
 		}
 
